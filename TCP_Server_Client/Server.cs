@@ -57,7 +57,8 @@ namespace TCP_Server_Client
                     {
                         //Echo the file and send the file conetents
                         connection.Send(Encoding.ASCII.GetBytes(echofile));
-                        connection.SendFile("C:\\Users\\benselj\\Documents\\ServerFiles\\" + filename);
+                        connection.SendFile("C:\\Users\\benselj\\Documents\\ServerFiles\\" + 
+                                            filename);
                     }
                     catch(FileNotFoundException)
                     {
