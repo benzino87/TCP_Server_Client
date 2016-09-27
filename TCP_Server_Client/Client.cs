@@ -64,7 +64,8 @@ namespace TCP_Server_Client
                             try
                             {
                                 Console.WriteLine("Saving File " + incomingFileName + "...");
-                                File.WriteAllText("C:\\Users\\benselj\\Documents\\ClientFiles\\" + incomingFileName, fileContents);
+                                File.WriteAllText("C:\\Users\\benselj\\Documents\\ClientFiles\\" + 
+                                                  incomingFileName, fileContents);
                                 Console.WriteLine("File saved!");
                             }
                             catch(IOException)
@@ -74,7 +75,8 @@ namespace TCP_Server_Client
                         }
 
                     }
-                    if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg") || incomingFileName.Contains(".jpeg"))
+                    if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg") || 
+                        incomingFileName.Contains(".jpeg"))
                     {
                         //Receive file contents from connection
                         byte[] buffer = new byte[100000];
@@ -90,7 +92,8 @@ namespace TCP_Server_Client
                             try
                             {
                                 Console.WriteLine("Saving File " + incomingFileName + "...");
-                                File.WriteAllBytes("C:\\Users\\benselj\\Documents\\ClientFiles\\" + incomingFileName, buffer);
+                                File.WriteAllBytes("C:\\Users\\benselj\\Documents\\ClientFiles\\" + 
+                                                   incomingFileName, buffer);
                                 Console.WriteLine("File saved!");
                             }
                             catch (IOException)
