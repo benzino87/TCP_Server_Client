@@ -69,7 +69,7 @@ namespace TCP_Server_Client
                         }
 
                     }
-                    if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg"))
+                    if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg") || incomingFileName.Contains(".jpeg"))
                     {
                         //Receive file contents from connection
                         //int bytesFromFile = connection.Receive(bytes);
