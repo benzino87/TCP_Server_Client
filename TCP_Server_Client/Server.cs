@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.IO;
 
 namespace TCP_Server_Client
 {
@@ -15,6 +16,7 @@ namespace TCP_Server_Client
     public class InFromClient
     {
         Socket connection;
+
         public InFromClient(Socket connection)
         {
             this.connection = connection;
@@ -34,9 +36,31 @@ namespace TCP_Server_Client
 
                 int bytesRec = connection.Receive(bytes);
 
-                data += Encoding.ASCII.GetString(bytes, 0, bytesRec);
+                data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
+
+                if (data.StartsWith("~"))
+                {
+                    //remove tilda to look for file look up
+                    string filename = data.Remove(0, 1);
+                    //echo back to client original file name request to save file.
+                    char[] echofile = data.ToCharArray();
+
+                    try
+                    {
+                        connection.Send(Encoding.ASCII.GetBytes(echofile));
+                        connection.SendFile("C:\\Users\\Jason\\Documents\\ServerFiles\\" + filename);
+                    }
+                    catch(FileNotFoundException)
+                    {
+                        string clientMessage = "FNF";
+                        char[] convertedClientMessage = clientMessage.ToCharArray();
+                        connection.Send(Encoding.ASCII.GetBytes(convertedClientMessage));
+                    }
+                }
+
                 if (data == "Quit")
                 {
+                    connection.Shutdown(SocketShutdown.Both);
                     connection.Close();
                     Console.WriteLine("Client has left");
                     break;
@@ -63,6 +87,12 @@ namespace TCP_Server_Client
         }
         public void writeToClient()
         {
+            //Send message to client indicating how to request file
+            string clientMessage = "To request a file type ~filename";
+            char[] convertedClientMessage = clientMessage.ToCharArray();
+            byte[] informClient = Encoding.ASCII.GetBytes(convertedClientMessage);
+            connection.Send(informClient);
+
             while (true)
             {
                 //Store user input to convert to bytes
@@ -73,15 +103,6 @@ namespace TCP_Server_Client
                 byte[] byteToSend = Encoding.ASCII.GetBytes(message);
 
                 connection.Send(byteToSend);
-
-                if (userInput == "Quit")
-                {
-                    connection.Close();
-                }
-                else
-                {
-                    connection.Send(byteToSend);
-                }
 
             }
         }
@@ -96,15 +117,18 @@ namespace TCP_Server_Client
     public class ClientHandler
     {
         private Socket client;
+        private int clientNumber;
 
-        public ClientHandler(Socket client)
+        public ClientHandler(Socket client, int clientNumber)
         {
             this.client = client;
+            this.clientNumber = clientNumber;
         }
         public void handleNewClient()
         {
 
-            string verifyConnection = client.Connected ? "Client connected" : null;
+            string verifyConnection = client.Connected ? "Client "+clientNumber+" connected" : 
+                "Attempted connection by client "+clientNumber;
 
             Console.WriteLine(verifyConnection);
 
@@ -128,7 +152,7 @@ namespace TCP_Server_Client
      **/
     public class Server
     {
-        public static void StartListening(string incomingIP, string incomingPort)
+        public static void StartListening(string incomingPort)
         {
 
             //Will be used to give a name to client(NOT USED YET)
@@ -138,7 +162,7 @@ namespace TCP_Server_Client
             // Dns.GetHostName returns the name of the 
             // host running the application.
             int portNumber = int.Parse(incomingPort);
-            IPAddress ipAddress = IPAddress.Parse(incomingIP);
+            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, portNumber);
 
             // Create a TCP/IP socket.
@@ -161,18 +185,20 @@ namespace TCP_Server_Client
                     // Program is suspended while waiting for an incoming connection.
                     Socket newClient = listener.Accept();
 
-                    ClientHandler ch = new ClientHandler(newClient);
+                    ClientHandler ch = new ClientHandler(newClient, count);
 
                     Thread connection = new Thread(new ThreadStart(ch.handleNewClient));
 
                     connection.Start();
+
+                    count++;
 
                 }
 
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine("You are here - SERVER");
             }
 
             //NOT USED(yet)
@@ -190,12 +216,10 @@ namespace TCP_Server_Client
         public static void Main(String[] args)
         {
 
-            Console.WriteLine("Enter an IP address (EX: 127.0.0.1):");
-            string ipAddress = Console.ReadLine();
             Console.WriteLine("Enter a port number (EX: 9876):");
             string portNumber = Console.ReadLine();
 
-            StartListening(ipAddress, portNumber);
+            StartListening(portNumber);
 
         }
     }

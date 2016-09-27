@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.IO;
 
 
 namespace TCP_Server_Client
@@ -31,11 +32,80 @@ namespace TCP_Server_Client
                 // Receive the response from the remote device.
                 int bytesRec = connection.Receive(bytes);
 
-                Console.WriteLine("SERVER: {0}",
-                    Encoding.ASCII.GetString(bytes, 0, bytesRec));
+                string incomingFileName = Encoding.ASCII.GetString(bytes, 0, bytesRec);
+
+                if (incomingFileName.IndexOf('~') == 0)
+                {
+                    incomingFileName = incomingFileName.Remove(0, 1);
+
+                    Console.WriteLine("FILE REQUEST: " + incomingFileName + "...");
+
+                    //Create the file with echo'ed file name
+                    //System.IO.StreamWriter file = new System.IO.StreamWriter("C:\\Users\\Jason\\Documents\\ClientFiles\\" + incomingFileName);
+
+                    if (incomingFileName.Contains(".txt"))
+                    {
+                        //Receive file contents from connection
+                        int bytesFromFile = connection.Receive(bytes);
+
+                        string fileContents = Encoding.ASCII.GetString(bytes, 0, bytesFromFile);
+
+                        if(fileContents == "FNF")
+                        {
+                            Console.WriteLine("SERVER: ERROR FILE NOT FOUND");
+                        }
+                        else
+                        {
+                            try
+                            {
+                                Console.WriteLine("Saving File " + incomingFileName + "...");
+                                File.WriteAllText("C:\\Users\\Jason\\Documents\\ClientFiles\\" + incomingFileName, fileContents);
+                                Console.WriteLine("File saved!");
+                            }
+                            catch(IOException)
+                            {
+                                Console.WriteLine("File already exists...");
+                            }
+                        }
+
+                    }
+                    if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg"))
+                    {
+                        //Receive file contents from connection
+                        //int bytesFromFile = connection.Receive(bytes);
+                        byte[] buffer = new byte[100000];
+                        connection.Receive(buffer, buffer.Length, SocketFlags.None);
+
+                        if (Encoding.UTF8.GetString(buffer) == "FNF")
+                        {
+                            Console.WriteLine("SERVER: ERROR FILE NOT FOUND");
+                        }
+                        else
+                        {
+                            try
+                            {
+                                Console.WriteLine("Saving File " + incomingFileName + "...");
+                                File.WriteAllBytes("C:\\Users\\Jason\\Documents\\ClientFiles\\" + incomingFileName, buffer);
+                                Console.WriteLine("File saved!");
+                            }
+                            catch (IOException)
+                            {
+                                Console.WriteLine("File already exists...");
+                            }
+                        }
+                    }
+
+                }
+                else
+                {
+
+                    Console.WriteLine("SERVER: {0}",
+                        Encoding.ASCII.GetString(bytes, 0, bytesRec));
+                }
             }
         }
     }
+
 
     /**
      * 
@@ -52,24 +122,32 @@ namespace TCP_Server_Client
         }
         public void writeToServer()
         {
-
-            while (true)
+            try
             {
-                Console.WriteLine("Enter a message");
 
-                //Store user input to convert to bytes
-                string userInput = Console.ReadLine();
-
-                char[] message = userInput.ToCharArray();
-
-                byte[] byteToSend = Encoding.ASCII.GetBytes(message);
-
-                connection.Send(byteToSend);
-
-                if (userInput == "Quit")
+                while (true)
                 {
-                    connection.Close();
+                    Console.WriteLine("Enter a message");
+
+                    //Store user input to convert to bytes
+                    string userInput = Console.ReadLine();
+
+                    char[] message = userInput.ToCharArray();
+
+                    byte[] byteToSend = Encoding.ASCII.GetBytes(message);
+
+                    connection.Send(byteToSend);
+
+                    if (userInput == "Quit")
+                    {
+                        connection.Shutdown(SocketShutdown.Both);
+                        connection.Close();
+                    }
                 }
+            }
+            catch(SocketException)
+            {
+                throw;
             }
         }
     }
@@ -124,7 +202,7 @@ namespace TCP_Server_Client
                 }
                 catch (SocketException se)
                 {
-                    Console.WriteLine("SocketException : {0}", se.ToString());
+                    Console.WriteLine("There is no server available");
                 }
                 catch (Exception e)
                 {
@@ -134,7 +212,7 @@ namespace TCP_Server_Client
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine("You are here - CLIENT");
             }
         }
 
