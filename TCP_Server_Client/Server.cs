@@ -5,12 +5,19 @@ using System.Text;
 using System.Threading;
 using System.IO;
 
+/**
+ * 
+ * @author Jason Bensel
+ * @version TCP_Project_Part_1
+ * 
+ **/
+
 namespace TCP_Server_Client
 {
 
     /**
      * 
-     * Handles all incoming data from individual client
+     * Handles all incoming data from individual client and file requests
      * 
      **/
     public class InFromClient
@@ -38,6 +45,7 @@ namespace TCP_Server_Client
 
                 data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
 
+                //Check for file request key
                 if (data.StartsWith("~"))
                 {
                     //remove tilda to look for file look up
@@ -47,8 +55,9 @@ namespace TCP_Server_Client
 
                     try
                     {
+                        //Echo the file and send the file conetents
                         connection.Send(Encoding.ASCII.GetBytes(echofile));
-                        connection.SendFile("C:\\Users\\Jason\\Documents\\ServerFiles\\" + filename);
+                        connection.SendFile("C:\\Users\\benselj\\Documents\\ServerFiles\\" + filename);
                     }
                     catch(FileNotFoundException)
                     {
@@ -74,7 +83,7 @@ namespace TCP_Server_Client
 
     /**
      * 
-     * Handles output to client who most recently sent data
+     * Handles output to client who most recently sent data (Chat)
      * 
      **/
     public class OutToClient
@@ -87,7 +96,7 @@ namespace TCP_Server_Client
         }
         public void writeToClient()
         {
-            //Send message to client indicating how to request file
+            //Send connection message to client indicating how to request a file
             string clientMessage = "To request a file type ~filename";
             char[] convertedClientMessage = clientMessage.ToCharArray();
             byte[] informClient = Encoding.ASCII.GetBytes(convertedClientMessage);
@@ -95,11 +104,9 @@ namespace TCP_Server_Client
 
             while (true)
             {
-                //Store user input to convert to bytes
+                //Wait for user input from server side to send to latest client
                 string userInput = Console.ReadLine();
-
                 char[] message = userInput.ToCharArray();
-
                 byte[] byteToSend = Encoding.ASCII.GetBytes(message);
 
                 connection.Send(byteToSend);
@@ -124,6 +131,8 @@ namespace TCP_Server_Client
             this.client = client;
             this.clientNumber = clientNumber;
         }
+        
+        //Create input and output threads for each client that connected
         public void handleNewClient()
         {
 

@@ -6,6 +6,13 @@ using System.Threading;
 using System.IO;
 
 
+/**
+ * 
+ * @author Jason Bensel
+ * @version TCP_Project_Part_1
+ * 
+ **/
+
 namespace TCP_Server_Client
 {
 
@@ -34,14 +41,12 @@ namespace TCP_Server_Client
 
                 string incomingFileName = Encoding.ASCII.GetString(bytes, 0, bytesRec);
 
+                //Check if server echoed a file request
                 if (incomingFileName.IndexOf('~') == 0)
                 {
                     incomingFileName = incomingFileName.Remove(0, 1);
 
                     Console.WriteLine("FILE REQUEST: " + incomingFileName + "...");
-
-                    //Create the file with echo'ed file name
-                    //System.IO.StreamWriter file = new System.IO.StreamWriter("C:\\Users\\Jason\\Documents\\ClientFiles\\" + incomingFileName);
 
                     if (incomingFileName.Contains(".txt"))
                     {
@@ -59,7 +64,7 @@ namespace TCP_Server_Client
                             try
                             {
                                 Console.WriteLine("Saving File " + incomingFileName + "...");
-                                File.WriteAllText("C:\\Users\\Jason\\Documents\\ClientFiles\\" + incomingFileName, fileContents);
+                                File.WriteAllText("C:\\Users\\benselj\\Documents\\ClientFiles\\" + incomingFileName, fileContents);
                                 Console.WriteLine("File saved!");
                             }
                             catch(IOException)
@@ -72,10 +77,10 @@ namespace TCP_Server_Client
                     if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg") || incomingFileName.Contains(".jpeg"))
                     {
                         //Receive file contents from connection
-                        //int bytesFromFile = connection.Receive(bytes);
                         byte[] buffer = new byte[100000];
                         connection.Receive(buffer, buffer.Length, SocketFlags.None);
 
+                        //Check if the server echoed file not found
                         if (Encoding.UTF8.GetString(buffer) == "FNF")
                         {
                             Console.WriteLine("SERVER: ERROR FILE NOT FOUND");
@@ -85,7 +90,7 @@ namespace TCP_Server_Client
                             try
                             {
                                 Console.WriteLine("Saving File " + incomingFileName + "...");
-                                File.WriteAllBytes("C:\\Users\\Jason\\Documents\\ClientFiles\\" + incomingFileName, buffer);
+                                File.WriteAllBytes("C:\\Users\\benselj\\Documents\\ClientFiles\\" + incomingFileName, buffer);
                                 Console.WriteLine("File saved!");
                             }
                             catch (IOException)
@@ -200,7 +205,7 @@ namespace TCP_Server_Client
                 {
                     Console.WriteLine("ArgumentNullException : {0}", ane.ToString());
                 }
-                catch (SocketException se)
+                catch (SocketException)
                 {
                     Console.WriteLine("There is no server available");
                 }
@@ -210,9 +215,9 @@ namespace TCP_Server_Client
                 }
 
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine("You are here - CLIENT");
+                Console.WriteLine("Invalid IP or Port number");
             }
         }
 
