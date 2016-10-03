@@ -56,13 +56,18 @@ namespace TCP_Server_Client
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Console.WriteLine("Something went wrong with the server");
+                Console.WriteLine("Something went wrong with the server : {0}", e.ToString());
                 Environment.Exit(0);
             }
         }
    
+        /**
+         * (HELPER)
+         * Determines which save method to use when client gets file request confirmation
+         * 
+         **/
         private void handleFileRequest(Socket connection, string incomingFileName, byte[] bytes)
         {
             incomingFileName = incomingFileName.Remove(0, 1);
@@ -73,13 +78,17 @@ namespace TCP_Server_Client
             {
                 handleTextFile(connection, incomingFileName, bytes);
             }
-            if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg") ||
-                incomingFileName.Contains(".jpeg"))
+            else
             {
                 handleImgFile(connection, incomingFileName);
             }
         }
 
+        /**
+         * 
+         * Converts byte buffer to string and save file as a text file
+         * 
+         **/
         private void handleTextFile(Socket connection, string incomingFileName, byte[] bytes)
         {
             //Receive file contents from connection
@@ -117,15 +126,17 @@ namespace TCP_Server_Client
             }
         }
 
-        private void fileSaveAttempt(string fileName)
-        {
 
-        }
-
+        /**
+         * 
+         * Increased byte buffer size for larger files like images.
+         * Saves file as bytes
+         * 
+         **/
         private void handleImgFile(Socket connection, string incomingFileName)
         {
             //Receive file contents from connection
-            byte[] buffer = new byte[100000];
+            byte[] buffer = new byte[1000000];
             connection.Receive(buffer, buffer.Length, SocketFlags.None);
 
             //Check if the server echoed file not found
@@ -192,6 +203,11 @@ namespace TCP_Server_Client
             }
         }
 
+        /**
+         * 
+         * Prompts user for message and handles sending message  to server
+         * 
+         **/
         private void promptUserAndSendMessage()
         {
             Console.WriteLine("Enter a message");
@@ -215,9 +231,9 @@ namespace TCP_Server_Client
                     connection.Close();
                 }
             }
-            catch(Exception)
+            catch(Exception e)
             {
-                Console.WriteLine("You are here");
+                Console.WriteLine("Something went wrong : {0}", e.ToString());
             }
         }
     }
@@ -267,7 +283,7 @@ namespace TCP_Server_Client
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(" YOU ARE HERE Unexpected exception : {0}", e.ToString());
+                    Console.WriteLine("Unexpected exception : {0}", e.ToString());
                 }
 
             }
@@ -293,7 +309,7 @@ namespace TCP_Server_Client
             }
             catch (Exception)
             {
-                Console.WriteLine("You are here 2");
+                Console.WriteLine("Error creating client threads");
             }
         }
 

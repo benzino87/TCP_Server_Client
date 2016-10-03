@@ -64,6 +64,12 @@ namespace TCP_Server_Client
             }
         }
 
+        /**
+         * (HELPER)
+         * Searches for requested file and sends to client, if file is not found
+         * it will send a notification to client that no such file exists.
+         * 
+         **/
         private void searchAndSendFileToClient(Socket connection, string data)
         {
             //remove tilda to look for file look up
@@ -190,6 +196,12 @@ namespace TCP_Server_Client
             }
         }
 
+
+        /**
+         * (HELPER)
+         * Creates indivudal thread specific to client that is requesting connection
+         * 
+         **/
         private static void createNewClientThread(Socket listener, int count)
         {
             try
