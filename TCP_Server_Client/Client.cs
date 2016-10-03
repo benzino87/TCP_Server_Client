@@ -34,81 +34,128 @@ namespace TCP_Server_Client
         }
         public void readFromServer()
         {
-            while (true)
+            try
             {
-                // Receive the response from the remote device.
-                int bytesRec = connection.Receive(bytes);
-
-                string incomingFileName = Encoding.ASCII.GetString(bytes, 0, bytesRec);
-
-                //Check if server echoed a file request
-                if (incomingFileName.IndexOf('~') == 0)
+                while (true)
                 {
-                    incomingFileName = incomingFileName.Remove(0, 1);
+                    // Receive the response from Server.
+                    int bytesRec = connection.Receive(bytes);
 
-                    Console.WriteLine("FILE REQUEST: " + incomingFileName + "...");
+                    string incomingFileName = Encoding.ASCII.GetString(bytes, 0, bytesRec);
 
-                    if (incomingFileName.Contains(".txt"))
+                    //Check if server echoed a file request
+                    if (incomingFileName.IndexOf('~') == 0)
                     {
-                        //Receive file contents from connection
-                        int bytesFromFile = connection.Receive(bytes);
-
-                        string fileContents = Encoding.ASCII.GetString(bytes, 0, bytesFromFile);
-
-                        if(fileContents == "FNF")
-                        {
-                            Console.WriteLine("SERVER: ERROR FILE NOT FOUND");
-                        }
-                        else
-                        {
-                            try
-                            {
-                                Console.WriteLine("Saving File " + incomingFileName + "...");
-                                File.WriteAllText("C:\\Users\\benselj\\Documents\\ClientFiles\\" + 
-                                                  incomingFileName, fileContents);
-                                Console.WriteLine("File saved!");
-                            }
-                            catch(IOException)
-                            {
-                                Console.WriteLine("File already exists...");
-                            }
-                        }
-
+                        handleFileRequest(connection, incomingFileName, bytes);
                     }
-                    if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg") || 
-                        incomingFileName.Contains(".jpeg"))
+                    else
                     {
-                        //Receive file contents from connection
-                        byte[] buffer = new byte[100000];
-                        connection.Receive(buffer, buffer.Length, SocketFlags.None);
-
-                        //Check if the server echoed file not found
-                        if (Encoding.UTF8.GetString(buffer) == "FNF")
-                        {
-                            Console.WriteLine("SERVER: ERROR FILE NOT FOUND");
-                        }
-                        else
-                        {
-                            try
-                            {
-                                Console.WriteLine("Saving File " + incomingFileName + "...");
-                                File.WriteAllBytes("C:\\Users\\benselj\\Documents\\ClientFiles\\" + 
-                                                   incomingFileName, buffer);
-                                Console.WriteLine("File saved!");
-                            }
-                            catch (IOException)
-                            {
-                                Console.WriteLine("File already exists...");
-                            }
-                        }
+                        //print out server messge
+                        Console.WriteLine("SERVER: {0}",
+                            Encoding.ASCII.GetString(bytes, 0, bytesRec));
                     }
-
                 }
-                else
-                {
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Something went wrong with the server");
+                Environment.Exit(0);
+            }
+        }
+   
+        private void handleFileRequest(Socket connection, string incomingFileName, byte[] bytes)
+        {
+            incomingFileName = incomingFileName.Remove(0, 1);
 
-                    Console.WriteLine("SERVER: {0}",
-                        Encoding.ASCII.GetString(bytes, 0, bytesRec));
+            Console.WriteLine("FILE REQUEST: " + incomingFileName + "...");
+
+            if (incomingFileName.Contains(".txt"))
+            {
+                handleTextFile(connection, incomingFileName, bytes);
+            }
+            if (incomingFileName.Contains(".png") || incomingFileName.Contains(".jpg") ||
+                incomingFileName.Contains(".jpeg"))
+            {
+                handleImgFile(connection, incomingFileName);
+            }
+        }
+
+        private void handleTextFile(Socket connection, string incomingFileName, byte[] bytes)
+        {
+            //Receive file contents from connection
+            int bytesFromFile = connection.Receive(bytes);
+
+            string fileContents = Encoding.ASCII.GetString(bytes, 0, bytesFromFile);
+
+            if (fileContents == "FNF")
+            {
+                Console.WriteLine("SERVER: ERROR FILE NOT FOUND");
+            }
+            else
+            {
+                try
+                {
+                    String filePath = "C:\\Users\\Jason\\Documents\\ClientFiles\\" +
+                                      incomingFileName;
+                    int count = 0;
+
+                    while (File.Exists(filePath))
+                    {
+                        count++;
+                        incomingFileName = count + incomingFileName;
+                        filePath = "C:\\Users\\Jason\\Documents\\ClientFiles\\" +
+                                      incomingFileName;
+                    }
+                    Console.WriteLine("Saving File " + incomingFileName + "...");
+                    File.WriteAllText(filePath, fileContents);
+                    Console.WriteLine("File saved!");
+                }
+                catch (IOException)
+                {
+                    Console.WriteLine("There was an error during file save");
+                }
+            }
+        }
+
+        private void fileSaveAttempt(string fileName)
+        {
+
+        }
+
+        private void handleImgFile(Socket connection, string incomingFileName)
+        {
+            //Receive file contents from connection
+            byte[] buffer = new byte[100000];
+            connection.Receive(buffer, buffer.Length, SocketFlags.None);
+
+            //Check if the server echoed file not found
+            if (Encoding.UTF8.GetString(buffer) == "FNF")
+            {
+                Console.WriteLine("SERVER: ERROR FILE NOT FOUND");
+            }
+
+            else
+            {
+                try
+                {
+                    String filePath = "C:\\Users\\Jason\\Documents\\ClientFiles\\" +
+                                      incomingFileName;
+                    int count = 0;
+
+                    while (File.Exists(filePath))
+                    {
+                        count++;
+                        incomingFileName = count + incomingFileName;
+                        filePath = "C:\\Users\\Jason\\Documents\\ClientFiles\\" +
+                                      incomingFileName;
+                    }
+                    Console.WriteLine("Saving File " + incomingFileName + "...");
+                    File.WriteAllBytes(filePath, buffer);
+                    Console.WriteLine("File saved!");
+                }
+                catch (IOException)
+                {
+                    Console.WriteLine("There was an error during file save");
                 }
             }
         }
@@ -128,34 +175,49 @@ namespace TCP_Server_Client
         {
             this.connection = connection;
         }
+
+
         public void writeToServer()
         {
             try
             {
-
                 while (true)
                 {
-                    Console.WriteLine("Enter a message");
-
-                    //Store user input to convert to bytes
-                    string userInput = Console.ReadLine();
-
-                    char[] message = userInput.ToCharArray();
-
-                    byte[] byteToSend = Encoding.ASCII.GetBytes(message);
-
-                    connection.Send(byteToSend);
-
-                    if (userInput == "Quit")
-                    {
-                        connection.Shutdown(SocketShutdown.Both);
-                        connection.Close();
-                    }
+                    promptUserAndSendMessage();
                 }
             }
-            catch(SocketException)
+            catch(Exception)
             {
                 throw;
+            }
+        }
+
+        private void promptUserAndSendMessage()
+        {
+            Console.WriteLine("Enter a message");
+
+            //Store user input to convert to bytes
+            string userInput = Console.ReadLine();
+
+            char[] message = userInput.ToCharArray();
+
+            byte[] byteToSend = Encoding.ASCII.GetBytes(message);
+
+            connection.Send(byteToSend);
+
+            try
+            {
+                if (userInput == "Quit")
+                {
+                    Environment.Exit(0);
+
+                    connection.Shutdown(SocketShutdown.Both);
+                    connection.Close();
+                }
+            }
+            catch(Exception)
+            {
+                Console.WriteLine("You are here");
             }
         }
     }
@@ -182,26 +244,17 @@ namespace TCP_Server_Client
                 IPEndPoint remoteEP = new IPEndPoint(ipAddress, portNumber);
 
                 // Create a TCP/IP  socket.
-                Socket sender = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                Socket connection = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
                 // Connect the socket to the remote endpoint. Catch any errors.
                 try
                 {
+                    connection.Connect(remoteEP);
 
-                    sender.Connect(remoteEP);
+                    startClientInputAndOutputThreads(connection);
 
                     Console.WriteLine("Socket connected to {0}",
-                        sender.RemoteEndPoint.ToString());
-
-                    //Create sepereate threads for input and output
-                    InFromServer inFromServer = new InFromServer(sender);
-                    OutToServer outToServer = new OutToServer(sender);
-
-                    Thread i = new Thread(new ThreadStart(inFromServer.readFromServer));
-                    Thread o = new Thread(new ThreadStart(outToServer.writeToServer));
-
-                    i.Start();
-                    o.Start();
+                        connection.RemoteEndPoint.ToString());
 
                 }
                 catch (ArgumentNullException ane)
@@ -214,13 +267,33 @@ namespace TCP_Server_Client
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Unexpected exception : {0}", e.ToString());
+                    Console.WriteLine(" YOU ARE HERE Unexpected exception : {0}", e.ToString());
                 }
 
             }
             catch (Exception)
             {
                 Console.WriteLine("Invalid IP or Port number");
+            }
+        }
+
+        private static void startClientInputAndOutputThreads(Socket connection)
+        {
+            try
+            {
+                InFromServer inFromServer = new InFromServer(connection);
+                OutToServer outToServer = new OutToServer(connection);
+
+                Thread i = new Thread(new ThreadStart(inFromServer.readFromServer));
+                Thread o = new Thread(new ThreadStart(outToServer.writeToServer));
+
+
+                i.Start();
+                o.Start();
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("You are here 2");
             }
         }
 

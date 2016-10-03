@@ -48,24 +48,7 @@ namespace TCP_Server_Client
                 //Check for file request key
                 if (data.StartsWith("~"))
                 {
-                    //remove tilda to look for file look up
-                    string filename = data.Remove(0, 1);
-                    //echo back to client original file name request to save file.
-                    char[] echofile = data.ToCharArray();
-
-                    try
-                    {
-                        //Echo the file and send the file conetents
-                        connection.Send(Encoding.ASCII.GetBytes(echofile));
-                        connection.SendFile("C:\\Users\\benselj\\Documents\\ServerFiles\\" + 
-                                            filename);
-                    }
-                    catch(FileNotFoundException)
-                    {
-                        string clientMessage = "FNF";
-                        char[] convertedClientMessage = clientMessage.ToCharArray();
-                        connection.Send(Encoding.ASCII.GetBytes(convertedClientMessage));
-                    }
+                    searchAndSendFileToClient(connection, data);
                 }
 
                 if (data == "Quit")
@@ -78,6 +61,28 @@ namespace TCP_Server_Client
 
                 // Show the data on the console.
                 Console.WriteLine("CLIENT: {0}", data);
+            }
+        }
+
+        private void searchAndSendFileToClient(Socket connection, string data)
+        {
+            //remove tilda to look for file look up
+            string filename = data.Remove(0, 1);
+            //echo back to client original file name request to save file.
+            char[] echofile = data.ToCharArray();
+
+            try
+            {
+                //Echo the file and send the file conetents
+                connection.Send(Encoding.ASCII.GetBytes(echofile));
+                connection.SendFile("C:\\Users\\Jason\\Documents\\ServerFiles\\" +
+                                    filename);
+            }
+            catch (FileNotFoundException)
+            {
+                string clientMessage = "FNF";
+                char[] convertedClientMessage = clientMessage.ToCharArray();
+                connection.Send(Encoding.ASCII.GetBytes(convertedClientMessage));
             }
         }
     }
@@ -165,58 +170,76 @@ namespace TCP_Server_Client
         public static void StartListening(string incomingPort)
         {
 
-            //Will be used to give a name to client(NOT USED YET)
+            //used to assign values(names) to clients
             int count = 0;
-
-            // Establish the local endpoint for the socket.
-            // Dns.GetHostName returns the name of the 
-            // host running the application.
-            int portNumber = int.Parse(incomingPort);
-            IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, portNumber);
-
-            // Create a TCP/IP socket.
-            Socket listener = new Socket(SocketType.Stream, ProtocolType.Tcp);
-
+            Socket listener = constructClientServerSocket(incomingPort);
 
             try
             {
+                // Start listening for connections.
+                while (true)
+                {
+                    createNewClientThread(listener, count);
+                    count++;
+                }
 
-                // Bind the socket to the local endpoint and 
-                // listen for incoming connections.
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Something went wrong during connection attempt");
+            }
+        }
+
+        private static void createNewClientThread(Socket listener, int count)
+        {
+            try
+            {
+                // Program is suspended while waiting for an incoming connection.
+                Socket newClient = listener.Accept();
+
+                ClientHandler ch = new ClientHandler(newClient, count);
+
+                Thread connection = new Thread(new ThreadStart(ch.handleNewClient));
+
+                connection.Start();
+            }
+            catch (Exception)
+            {
+                throw; //toss the exception up
+            }
+        }
+
+        /**
+         * 
+         * Create TCP/IP socket and establish the local endpoint. Notify user
+         * Server is listening.
+         * 
+         **/
+        private static Socket constructClientServerSocket(string incomingPort)
+        {
+
+            try
+            {
+                int portNumber = int.Parse(incomingPort);
+                IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+                IPEndPoint localEndPoint = new IPEndPoint(ipAddress, portNumber);
+
+                Socket listener = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                
                 listener.Bind(localEndPoint);
                 listener.Listen(10);
 
                 Console.WriteLine("Waiting for a connection on port {0}...", portNumber);
 
-                // Start listening for connections.
-                while (true)
-                {
-                    // Program is suspended while waiting for an incoming connection.
-                    Socket newClient = listener.Accept();
-
-                    ClientHandler ch = new ClientHandler(newClient, count);
-
-                    Thread connection = new Thread(new ThreadStart(ch.handleNewClient));
-
-                    connection.Start();
-
-                    count++;
-
-                }
-
+                return listener;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine("You are here - SERVER");
+                throw; //toss the exception up
             }
 
-            //NOT USED(yet)
-            // Console.WriteLine("\nPress ENTER to continue...");
-            // Console.Read();
-
+            
         }
-
 
         /**
          * 
